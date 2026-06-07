@@ -3,10 +3,16 @@ from flask import Flask, request, redirect, flash, render_template_string, url_f
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = "dev-key-change-later"  # needed for flash messages
+app.secret_key = os.environ.get("SECRET_KEY", "dev-key-change-later")  # needed for flash messages
+app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB cap
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.errorhandler(413)
+def too_large(e):
+    flash("File too large.")
+    return redirect(url_for("home"))
 
 
 @app.route("/")
@@ -62,4 +68,4 @@ def download(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
